@@ -1,0 +1,6 @@
+{
+  "name": "VERDICT",
+  "description": "A shared decision-negotiation board for humans and AI agents. Don't just ask AI what to choose. Make it defend the choice.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
