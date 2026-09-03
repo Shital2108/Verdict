@@ -1,186 +1,674 @@
 # VERDICT
 
-> **“Don’t just ask AI what to choose. Make it defend the choice.”**
+## The AI Decision Engine That Makes Agents Defend Their Choices.
 
-VERDICT is a shared decision-negotiation board for humans and AI agents, built specifically for the **WebMCP Challenge**.
+> "AI can give you an answer. But should it be allowed to make the decision?
+>
+> VERDICT makes AI defend its choice, challenge its own recommendation, and earn human approval before committing."
 
-Unlike ordinary AI shopping assistants or chatbots that push unvetted suggestions, VERDICT establishes a rigorous bi-directional cockpit where an AI agent researches options, weights priorities, calculates recommendations, **challenges its own recommendation with counter-arguments and tipping points**, and prepares decisions—while the **human user maintains absolute cryptographic control over final commitment**.
-
----
-
-## 1. What is Verdict?
-VERDICT is not an e-commerce website, not a marketplace, and not a generic chatbot. It is a **decision-negotiation protocol and dashboard** where:
-- The human and AI agent share a **single canonical state**.
-- Priority weights are continuously normalized to strictly **100%**.
-- Mathematical scores are derived in real-time from transparent criterion contributions.
-- The AI agent is forced to perform **adversarial self-critique** (`challenge_top_pick`) to highlight runner-up advantages before asking for commitment.
-- High-stakes decisions are **locked** until explicit human authorization is granted.
+![WebMCP](https://img.shields.io/badge/WebMCP-Native-6E56CF)
+![React](https://img.shields.io/badge/React-TypeScript-61DAFB)
+![Vite](https://img.shields.io/badge/Vite-Frontend-646CFF)
+![License](https://img.shields.io/badge/License-MIT-green)
 
 ---
 
-## 2. Why Ordinary AI Recommendations are Insufficient
-Typical AI assistants suffer from critical failure modes:
-1. **Blind Hallucinated Certainty**: They output a single recommendation without revealing the delicate tradeoffs or vulnerabilities.
-2. **Hidden Criteria**: Users cannot see how specific priorities (e.g. battery vs performance) skew the outcome.
-3. **Premature Action / Loss of Human Agency**: Agents with tool access may execute actions or commit choices without explicit human consent.
-4. **Asymmetric State**: Chatbots maintain internal states disconnected from what the user is adjusting on screen.
+## The Idea
 
-VERDICT solves this by pairing **WebMCP tools** with an **adversarial self-defense loop** and **application-enforced human approval gates**.
-
----
-
-## 3. Human + Agent Shared State Architecture
-VERDICT operates on a single canonical decision store (`src/store/decisionStore.ts`).
+Most AI decision systems stop at:
 
 ```
-              ┌──────────────────────────────────────────────┐
-              │             CANONICAL STATE STORE            │
-              │  - Title & Context                           │
-              │  - Criteria & 100% Normalized Weights        │
-              │  - Candidate Options & Raw Scores            │
-              │  - Real-time Weighted Aggregations & Ranking │
-              │  - Adversarial Challenge & Vulnerabilities   │
-              │  - Commit Status & Human Approval Flag       │
-              └──────────────────────┬───────────────────────┘
-                                     │
-                 ┌───────────────────┴───────────────────┐
-                 ▼                                       ▼
-     ┌────────────────────────┐             ┌─────────────────────────┐
-     │      HUMAN UI          │             │       WEBMCP AGENT      │
-     │  - Priority Sliders    │             │  - research_options     │
-     │  - Matrix Inspection   │             │  - score_options        │
-     │  - APPROVE Button      │             │  - challenge_top_pick   │
-     │  - Scenario Switcher   │             │  - adjust_priority      │
-     │                        │             │  - request_commit       │
-     │                        │             │  - commit_decision      │
-     └────────────────────────┘             └─────────────────────────┘
+Input → AI → Answer
 ```
 
-When an agent invokes `adjust_priority({ criterion: "battery", weight: 60 })`, the **actual visible UI slider shifts to 60%**, the remaining criteria normalize to sum to 100%, and the ranking recalculates instantaneously on screen.
+VERDICT asks a harder question:
+
+> What happens when the AI's recommendation needs to be inspected, challenged, changed, and ultimately authorized by a human?
+
+VERDICT is a WebMCP-powered decision-negotiation engine that gives AI agents structured access to a live decision state.
+
+The agent can:
+
+- Research available options
+- Score candidates against explicit priorities
+- Challenge its own recommendation
+- Change decision priorities
+- Calculate when the recommendation would change
+- Request commitment
+- Attempt to commit
+- Be blocked when human authorization is missing
+- Commit only after explicit human approval
+
+**The human remains the final authority.**
 
 ---
 
-## 4. Real WebMCP Implementation
-VERDICT registers with the official WebMCP browser specification via:
+## Why This Is a WebMCP Problem
 
-```typescript
-// src/webmcp/webmcp.ts
-if ('modelContext' in document && typeof document.modelContext?.registerTool === 'function') {
-  for (const tool of VERDICT_WEBMCP_TOOLS) {
-    document.modelContext.registerTool({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: tool.parameters,
-      execute: tool.execute,
-    }, { signal });
+Traditional web automation asks an agent to understand a UI:
+
+> "Find the battery slider and move it to 10%."
+
+That requires the agent to infer page structure, controls, and intent.
+
+VERDICT exposes meaningful application capabilities as structured WebMCP tools instead.
+
+The agent can reason in terms of:
+
+```
+adjust_priority
+challenge_top_pick
+request_commit
+commit_decision
+```
+
+rather than manipulating arbitrary UI elements.
+
+This changes the relationship between the agent and the application.
+
+The website is no longer only a page to navigate.
+
+**It becomes an agent-capable application surface.**
+
+WebMCP is specifically designed around websites exposing structured tools that agents can use directly, which is why VERDICT's workflow is a strong fit for the platform.
+
+---
+
+## The Core Insight
+
+**Recommendation ≠ Authorization**
+
+VERDICT deliberately separates these two concepts.
+
+```
+             AI AGENT
+                │
+                ▼
+          ┌───────────┐
+          │  Research │
+          └─────┬─────┘
+                ▼
+          ┌───────────┐
+          │   Score   │
+          └─────┬─────┘
+                ▼
+          ┌───────────┐
+          │ Challenge │
+          └─────┬─────┘
+                ▼
+          ┌───────────┐
+          │ Priorities│
+          └─────┬─────┘
+                ▼
+          ┌───────────┐
+          │ Recommend │
+          └─────┬─────┘
+                ▼
+         HUMAN APPROVAL
+                │
+      ┌─────────┴─────────┐
+      │                   │
+   REJECT               APPROVE
+      │                   │
+      ▼                   ▼
+   STOP              COMMIT
+```
+
+An agent can analyze.
+An agent can recommend.
+An agent can challenge.
+
+**But an agent cannot silently cross the final authorization boundary.**
+
+---
+
+## A Live Example
+
+VERDICT ships with a hardware-selection scenario:
+
+> Which laptop should I choose for AI development and daily commuting?
+
+Three candidates:
+
+| Option | Performance | Battery | Portability |
+|--------|-------------|---------|-------------|
+| Laptop A | 92 | 71 | 86 |
+| Laptop B | 87 | 94 | 91 |
+| Laptop C | 84 | 89 | 78 |
+
+The decision engine uses explicit weighted priorities:
+
+```
+Performance: 35%
+Battery:     45%
+Portability: 20%
+```
+
+The resulting recommendation is:
+
+**Laptop B — 91 points**
+
+But VERDICT does not stop there. The agent challenges the recommendation. Then the priorities can change.
+
+---
+
+## Decisions Should Be Sensitive to Priorities
+
+A major feature of VERDICT is dynamic priority negotiation.
+
+For example, the agent can reduce battery priority:
+
+```
+Battery: 10%
+```
+
+VERDICT automatically normalizes the remaining criteria.
+
+Later, performance can become the dominant criterion:
+
+```
+Performance: 65%
+Battery:     24%
+Portability: 11%
+```
+
+The recommendation is recalculated against the new state.
+
+This makes the decision transparent:
+
+> "The answer is not treated as an absolute truth."
+
+It is a consequence of:
+
+```
+options × criteria × priorities
+```
+
+---
+
+## The Challenge Engine
+
+The most important question is not:
+
+> "What is the winner?"
+
+It is:
+
+> "Why might the winner be wrong?"
+
+`challenge_top_pick` examines the current recommendation and identifies weaknesses in the decision boundary.
+
+In the demonstrated run:
+
+```
+Winner:       Laptop B
+Score:        89.1
+
+Runner-up:    Laptop A
+Score:        86.3
+
+Current gap:  2.8 points
+
+A's advantage:
+Performance: +5 points
+```
+
+VERDICT then calculates a tipping point:
+
+```
+Performance priority ≈ 78%
+```
+
+At that point, Laptop A overtakes Laptop B.
+
+This transforms:
+
+> "Laptop B wins."
+
+into:
+
+> "Laptop B wins under these priorities, but the recommendation changes when performance becomes sufficiently dominant."
+
+**That is a fundamentally more useful decision.**
+
+---
+
+## Native WebMCP Surface
+
+VERDICT exposes six native WebMCP tools:
+
+| Tool | Purpose |
+|------|---------|
+| `research_options` | Retrieve and inspect candidate options |
+| `score_options` | Score candidates against current priorities |
+| `challenge_top_pick` | Adversarially challenge the current recommendation |
+| `adjust_priority` | Change a criterion and normalize weights |
+| `request_commit` | Request finalization while preserving human approval |
+| `commit_decision` | Commit only when authorization requirements are satisfied |
+
+The application registers these capabilities through the browser's WebMCP surface:
+
+```javascript
+document.modelContext.registerTool({
+  name: "score_options",
+  description: "Score decision options against current priorities",
+  inputSchema: { /* structured schema */ },
+  execute: async (input) => {
+    // operate on canonical decision state
   }
-}
+});
 ```
 
-No fake wrappers or simulated functions pretending to be WebMCP. If the host browser does not natively implement `document.modelContext`, VERDICT displays a transparent status badge while keeping the exact WebMCP schemas ready for execution in WebMCP-compatible clients (e.g. ChatGPT / WebMCP extensions).
+The important architectural property is that these tools operate on the **same canonical decision state** used by the human UI.
 
 ---
 
-## 5. The Six WebMCP Tools
+## One Shared Decision State
 
-| Tool Name | Parameters | Purpose | Safety Constraint |
-| :--- | :--- | :--- | :--- |
-| `research_options` | `{ query?: string }` | Retrieves candidate options for the active decision context into shared state. | Reads/Updates candidate pool |
-| `score_options` | `{}` | Computes mathematical weighted scores from current weights and assigns #1 ranking. | Pure deterministic evaluation |
-| `challenge_top_pick` | `{}` | Forces the agent to identify the runner-up, compare score vulnerabilities, and explain the priority tipping point where the runner-up wins. | Must run prior to commitment |
-| `adjust_priority` | `{ criterion: string, weight: number }` | Directly modifies the exact priority sliders in shared state, redistributes remaining weight to guarantee 100% total. | Strict 0-100 bounds + normalization |
-| `request_commit` | `{ justification?: string }` | Prepares the decision for human review. Transitions board into `pending_human_approval`. | **Does NOT finalize commit** |
-| `commit_decision` | `{ reason?: string }` | Finalizes the decision and creates an immutable `VD-XXXX` record. | **STRICT: Fails with `HUMAN_APPROVAL_REQUIRED` if `humanApproved === false`** |
+VERDICT is not:
+
+```
+Human UI
+    +
+Separate AI Simulation
+```
+
+Instead:
+
+```
+             CANONICAL STATE
+                   │
+          ┌────────┴────────┐
+          │                 │
+      Human UI          WebMCP Agent
+          │                 │
+          └────────┬────────┘
+                   │
+             Decision Engine
+```
+
+The UI and WebMCP tools converge on the same state model.
+
+That enables a human and an external agent to participate in the same decision workflow.
 
 ---
 
-## 6. Adversarial Safety & Human Approval Enforcement
-VERDICT enforces human security at the application engine layer (`src/engine/decisionEngine.ts`):
+## Human Approval Is an Application Boundary
 
-```typescript
-export function validateCommitSecurity(state: {
-  committedStatus: string;
-  winner: RankedOption | null;
-  challenge: ChallengeResult | null;
-  humanApproved: boolean;
-}): { canCommit: boolean; error?: string; errorCode?: string } {
-  if (state.committedStatus === 'committed') {
-    return { canCommit: false, errorCode: 'ALREADY_COMMITTED' };
-  }
-  if (!state.humanApproved) {
-    return {
-      canCommit: false,
-      error: 'HUMAN_APPROVAL_REQUIRED: Explicit human approval must be granted before committing.',
-      errorCode: 'HUMAN_APPROVAL_REQUIRED',
-    };
-  }
-  return { canCommit: true };
-}
-```
+The most important safety property is enforced by the application itself.
 
-If an AI agent attempts an unauthorized commit call:
+An agent may call `request_commit` and receive:
+
 ```json
 {
-  "success": false,
-  "error": "HUMAN_APPROVAL_REQUIRED",
-  "message": "Explicit human approval is required before commitment."
+  "status": "pending_human_approval"
 }
+```
+
+If the agent attempts `commit_decision` without approval, VERDICT returns:
+
+```
+HUMAN_APPROVAL_REQUIRED
+```
+
+No decision record is created.
+
+Only after the human explicitly selects **APPROVE DECISION** can the commit operation succeed.
+
+This is not a prompt instruction saying:
+
+> "Please ask the human first."
+
+**It is an application-enforced authorization boundary.**
+
+---
+
+## External Agent Demonstration
+
+VERDICT was tested with an external Gemini agent against the deployed application.
+
+The agent discovered the application's six WebMCP tools and executed the decision workflow through those tools:
+
+```
+Discover tools
+      ↓
+Research
+      ↓
+Score
+      ↓
+Challenge
+      ↓
+Adjust battery priority
+      ↓
+Score again
+      ↓
+Adjust performance priority
+      ↓
+Challenge again
+      ↓
+Request commit
+      ↓
+Attempt unauthorized commit
+      ↓
+HUMAN_APPROVAL_REQUIRED
+      ↓
+Human approves
+      ↓
+Commit succeeds
+```
+
+This is the core VERDICT experience:
+
+**The agent participates in the decision without owning the decision.**
+
+---
+
+## Final Demonstrated Decision
+
+After explicit human approval, the demonstrated run produced:
+
+```
+Decision ID: VD-MTLA9MEK-9427
+
+Selected option: Laptop B
+Final score:      89.1
+
+Performance:      65%
+Battery:          24%
+Portability:      11%
+
+Final ranking:
+1. Laptop B — 89.1
+2. Laptop A — 86.3
+3. Laptop C — 84.5
+```
+
+The committed record is frozen to protect the recorded decision state.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    VERDICT UI                       │
+│                                                     │
+│  Decision Board │ Priority Controls │ Approval UI   │
+└────────────────────────┬────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────┐
+│              CANONICAL DECISION STATE               │
+│                                                     │
+│ Options • Priorities • Scores • Challenges          │
+│ Approval State • Commit State • Activity            │
+└────────────────────────┬────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────┐
+│                DECISION ENGINE                      │
+│                                                     │
+│ Scoring • Ranking • Normalization                   │
+│ Challenge Analysis • Tipping Points                 │
+└────────────────────────┬────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────┐
+│                  WebMCP SURFACE                     │
+│                                                     │
+│ research_options                                    │
+│ score_options                                       │
+│ challenge_top_pick                                  │
+│ adjust_priority                                     │
+│ request_commit                                      │
+│ commit_decision                                     │
+└────────────────────────┬────────────────────────────┘
+                         │
+                         ▼
+                 External AI Agent
 ```
 
 ---
 
-## 7. Demo Scenarios & Data Model
+## Technology
 
-### Scenario 1: Laptop Selection for AI Dev & Daily Commuting
-- **Criteria**: Performance (35%), Battery (45%), Portability (20%)
-- **Option A (Laptop A)**: Performance: 92, Battery: 71, Portability: 86
-- **Option B (Laptop B)**: Performance: 87, Battery: 94, Portability: 91
-- **Option C (Laptop C)**: Performance: 84, Battery: 89, Portability: 78
-- **Initial Scores**:
-  - A = $92 \times 0.35 + 71 \times 0.45 + 86 \times 0.20 = 81.4$
-  - B = $87 \times 0.35 + 94 \times 0.45 + 91 \times 0.20 = 91.0$ (Winner 🥇)
-  - C = $84 \times 0.35 + 89 \times 0.45 + 78 \times 0.20 = 85.1$
+**Frontend**
+- React
+- TypeScript
+- Vite
 
-### Scenario 2: Apartment Selection for Hybrid Work
-- Demonstrates generic decision engine support (Rent 40%, Commute 35%, Space 25%).
+**Agent Interface**
+- Native WebMCP
+- `document.modelContext.registerTool()`
+
+**Decision Engine**
+- Deterministic weighted scoring
+- Dynamic weight normalization
+- Ranking
+- Adversarial challenge analysis
+- Exact tipping-point calculation
+
+**Deployment**
+- Vercel
 
 ---
 
-## 8. Installation & Running Locally
+## Project Structure
 
-### Prerequisites
-- Node.js 18+
-- npm or yarn
+```
+src/
+├── components/
+│   ├── Header.tsx
+│   ├── PrioritySliders.tsx
+│   └── ...
+│
+├── engine/
+│   └── decisionEngine.ts
+│
+├── store/
+│   └── decisionStore.ts
+│
+├── types/
+│   └── verdict.ts
+│
+├── webmcp/
+│   └── webmcp.ts
+│
+└── App.tsx
+```
 
-### Commands
+The separation is intentional:
+
+```
+UI → State → Decision Engine → WebMCP
+```
+
+This keeps agent capabilities tied to actual application behavior rather than creating a second implementation of the product for the demo.
+
+---
+
+## Why This Matters Beyond Laptops
+
+The laptop scenario is only the demonstration domain.
+
+The same architecture applies anywhere a recommendation needs both reasoning and authorization.
+
+| Domain | Question |
+|--------|----------|
+| Procurement | "Which vendor should we select?" |
+| Hiring | "Which candidate best matches the role?" |
+| Housing | "Which property best fits our priorities?" |
+| Travel | "Which itinerary balances cost, time, and comfort?" |
+| Business Operations | "Which action should we take given the current constraints?" |
+| Financial Planning | "Which option best fits the selected objectives?" |
+
+The underlying pattern remains:
+
+```
+Evaluate → Explain → Challenge → Negotiate → Authorize → Commit
+```
+
+---
+
+## What WebMCP Makes Possible
+
+Before an agent-aware application surface, an agent may need to infer how to operate a website.
+
+With WebMCP, the application can expose intentional capabilities directly.
+
+For VERDICT, that means an external agent can interact with concepts such as:
+
+```
+"change the priority"
+"challenge the recommendation"
+"request commitment"
+"commit the decision"
+```
+
+instead of attempting to reconstruct those concepts from pixels and DOM elements.
+
+The result is a cleaner human-agent interaction model:
+
+- The UI is for humans.
+- The tools are for agents.
+- The underlying state is shared.
+
+---
+
+## Security & Trust Model
+
+**Agent capabilities** — The agent can:
+- Read decision state
+- Calculate scores
+- Challenge recommendations
+- Change priorities
+- Request commitment
+
+**Human authority** — The human controls:
+- Final approval
+- Authorization to commit
+
+**Enforcement** — Unauthorized commitment returns:
+
+```
+HUMAN_APPROVAL_REQUIRED
+```
+
+The authorization requirement is enforced inside the application's decision flow rather than relying solely on agent instructions.
+
+---
+
+## Verification Scope
+
+VERDICT includes a local WebMCP test console for exercising the application's registered tools.
+
+The project was also tested with an external Gemini agent against the deployed application.
+
+The strongest verification path is:
+
+```
+External Agent
+      ↓
+Discover WebMCP tools
+      ↓
+Invoke native tools
+      ↓
+Observe shared decision state
+      ↓
+Attempt unauthorized commit
+      ↓
+Application rejects
+      ↓
+Human approves
+      ↓
+Commit succeeds
+```
+
+This demonstrates the intended human-agent interaction rather than merely displaying WebMCP-related UI.
+
+---
+
+## Running Locally
+
 ```bash
-# 1. Install dependencies
+git clone <repository-url>
+cd verdict
 npm install
-
-# 2. Run local development server (runs on port 3000)
 npm run dev
+```
 
-# 3. Run automated tests (19 unit & adversarial tests)
-npm test
+**Build:**
 
-# 4. Production build
+```bash
 npm run build
 ```
 
----
+**Test:**
 
-## 9. Verification & Testing
+```bash
+npm test
+```
 
-### Verification Scope & Local Test Harness
-The in-browser **WebMCP Test Console** functions as a local development and evaluation harness. It allows developers and judges to simulate, inspect, and verify WebMCP tool executions, parameter schemas, and multi-step agent flows directly inside environments where native `document.modelContext` may not be present. In native WebMCP host environments (such as Chrome Origin Trial builds), the exact same underlying tools are registered natively on `document.modelContext`.
+The application can be tested in a WebMCP-compatible environment.
 
-### Features of the Test Console
-- Execute any of the 6 WebMCP tools with custom JSON payloads.
-- Run the **Full 4-Step Agent Workflow**.
-- Run the **Adversarial Safety Attack** to verify that unauthorized commits are strictly blocked.
-- Inspect raw schemas and registration code.
+For Chrome-based testing, use `chrome://flags/#enable-webmcp-testing` as described by the WebMCP challenge documentation.
 
 ---
 
-## 10. License
-Distributed under the **MIT License**. See `LICENSE` for details.
+## Design Principles
+
+**1. Shared State Over Parallel State**
+Humans and agents should interact with the same decision state.
+
+**2. Recommendation Is Not Authorization**
+An agent can propose an action without automatically being allowed to finalize it.
+
+**3. Challenge the Winner**
+A recommendation becomes more useful when the system can explain how it could fail.
+
+**4. Make Trade-offs Explicit**
+Priorities should be visible, adjustable, and mathematically reflected in the outcome.
+
+**5. Prefer Application-Level Enforcement**
+Critical authorization rules should be enforced by the application, not merely requested through prompts.
+
+**6. Demonstrate, Don't Just Describe**
+Every important claim should be observable through the application or its tool execution.
+
+---
+
+## The Bigger Vision
+
+VERDICT explores a future where websites are not passive interfaces consumed by AI.
+
+They are decision environments designed for both humans and agents.
+
+**The human brings:** Intent • Context • Values • Authority
+
+**The agent brings:** Analysis • Exploration • Challenge • Execution
+
+VERDICT provides the shared surface where those capabilities meet.
+
+---
+
+## Demo
+
+**Live Application:** https://verdict-two-lac.vercel.app/
+
+---
+
+> *"AI should not only tell us what to choose.*
+>
+> *It should be able to explain why, challenge itself, show us when the answer changes, and know where human authority begins."*
+
+---
+
+# VERDICT
+
+**Don't just ask AI what to choose. Make it defend the choice.**
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
