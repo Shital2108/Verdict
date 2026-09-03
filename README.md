@@ -672,3 +672,105 @@ VERDICT provides the shared surface where those capabilities meet.
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## Decision Scenarios
+
+VERDICT is designed as a domain-independent decision-negotiation engine.
+
+The decision engine does not depend on laptops, apartments, or any single category. The same WebMCP tool surface operates against whichever decision scenario is active.
+
+Currently, VERDICT includes two built-in scenarios:
+
+### 💻 Hardware Selection
+
+> "Which laptop should I choose for AI development and daily commuting?"
+
+| Criterion | Example Weight |
+|-----------|---------------|
+| Performance | 35% |
+| Battery | 45% |
+| Portability | 20% |
+
+The recorded external-agent demonstration uses this scenario to show the complete WebMCP workflow from tool discovery through human-approved commitment.
+
+---
+
+### 🏠 Housing Decision
+
+> "Which apartment should I lease for hybrid work and city commute?"
+
+| Criterion | Weight |
+|-----------|--------|
+| Rent & Value | 40% |
+| Commute Ease | 35% |
+| Space & Layout | 25% |
+
+Current example options include Downtown Loft, Financial District Core, and Midtown Flat.
+
+The current decision state produces: **Midtown Flat — 84.3 points**
+
+---
+
+### Domain-Agnostic WebMCP Architecture
+
+The important architectural point is that the WebMCP protocol does not change when the scenario changes.
+
+```
+             VERDICT
+                │
+       Canonical Decision State
+                │
+      ┌─────────┴─────────┐
+      │                   │
+Hardware Selection    Housing Decision
+      │                   │
+      └─────────┬─────────┘
+                │
+         Same WebMCP Tools
+                │
+                ▼
+research → score → challenge
+    → adjust → request → commit
+```
+
+The same six tools remain available when switching between decision domains:
+
+```
+research_options
+score_options
+challenge_top_pick
+adjust_priority
+request_commit
+commit_decision
+```
+
+Changing from Hardware Selection criteria (Performance, Battery, Portability) to Housing criteria (Rent & Value, Commute Ease, Space & Layout) does not require a different agent protocol.
+
+The agent still follows the same decision lifecycle:
+
+```
+Research → Score → Challenge → Adjust Priorities
+→ Re-score → Challenge Again → Request Human Approval → Commit
+```
+
+This separation between decision domain and decision protocol is a core design principle of VERDICT.
+
+---
+
+### Recorded Demonstration vs. Product Capability
+
+The primary recorded demo uses Hardware Selection because it provides a clear, compact example of the complete workflow.
+
+The application also contains the Housing Decision scenario to demonstrate that the underlying architecture generalizes beyond the recorded laptop example.
+
+> "The laptop is the demonstration domain — not the limitation of the engine."
+
+The product's reusable primitive is the decision protocol itself:
+
+```
+Evaluate → Explain → Challenge → Negotiate → Authorize → Commit
+```
+
+This allows future scenarios to be added without redesigning the agent interaction model.
