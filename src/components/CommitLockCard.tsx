@@ -113,7 +113,7 @@ export const CommitLockCard: React.FC<CommitLockCardProps> = ({ state }) => {
   }
 
   // State 2: Ready for Human Approval or Pending
-  const isChallengeDone = !!challenge;
+  const isChallengeDone = !!challenge || commitRequestStatus === 'pending_human_approval';
 
   return (
     <section className="bg-zinc-900/70 border border-zinc-800 rounded-xl p-5 md:p-6 shadow-sm">
